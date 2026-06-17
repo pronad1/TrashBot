@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TrashBot Vision | Professional Monitoring Suite</title>
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- Google Fonts for modern typography -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome 6 (free icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 30%, #0b0e17, #07090f);
+            font-family: 'Inter', sans-serif;
+            color: #eef2ff;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+        }
+
+        /* professional container grid */
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* header area with status badges */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(72, 187, 255, 0.25);
+            padding-bottom: 1.25rem;
+        }
+
+        .title-section h1 {
+            font-weight: 700;
+            font-size: 1.9rem;
+            background: linear-gradient(135deg, #FFFFFF 0%, #7AC7FF 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .title-section h1 i {
+            background: none;
+            color: #2dd4bf;
+            font-size: 2rem;
+            background-clip: unset;
+            -webkit-background-clip: unset;
+            color: #2dd4bf;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: #8e9aaf;
+            margin-top: 8px;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .connection-badge {
+            background: rgba(16, 185, 129, 0.2);
+            backdrop-filter: blur(4px);
+            padding: 6px 14px;
+            border-radius: 60px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .connection-badge i {
+            font-size: 0.7rem;
+            color: #10b981;
+        }
+
+        .status-panel {
+            background: rgba(18, 22, 35, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 8px 20px;
+            border: 1px solid rgba(66, 153, 225, 0.3);
+        }
+
+        .status-panel span {
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        /* main card layout */
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 1.8rem;
+            margin-bottom: 2rem;
+        }
+
+        /* video feed card */
+        .feed-card {
+            background: rgba(12, 15, 24, 0.65);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            border: 1px solid rgba(72, 187, 255, 0.2);
+            overflow: hidden;
+            box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            background: rgba(0, 0, 0, 0.4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-header i {
+            color: #4f9eff;
+            margin-right: 8px;
+        }
+
+        .live-badge {
+            background: #e11d48;
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+                box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.4);
+            }
+
+            70% {
+                opacity: 1;
+                box-shadow: 0 0 0 8px rgba(225, 29, 72, 0);
+            }
+
+            100% {
+                opacity: 0.6;
+                box-shadow: 0 0 0 0 rgba(225, 29, 72, 0);
+            }
+        }
+
+        .image-container {
+            background: #00000022;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1.2rem;
+            min-height: 420px;
+        }
+
+        #live {
+            max-width: 100%;
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s;
+            background: #0a0c14;
+        }
+
+        /* right panel - insights & detections */
+        .insights-card {
+            background: rgba(12, 15, 24, 0.65);
+            backdrop-filter: blur(12px);
+            border-radius: 32px;
+            border: 1px solid rgba(72, 187, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detection-header {
+            padding: 1.2rem 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .detection-header h3 {
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .detection-list-area {
+            flex: 1;
+            padding: 1.2rem 1.5rem;
+        }
+
+        .detection-badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 1.8rem;
+            min-height: 80px;
+            align-items: center;
+        }
+
+        .detection-chip {
+            background: linear-gradient(135deg, #1f2a48, #111827);
+            border-radius: 40px;
+            padding: 8px 18px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-left: 3px solid #2dd4bf;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .detection-chip i {
+            color: #2dd4bf;
+            font-size: 0.85rem;
+        }
+
+        .empty-detection {
+            color: #6c7a9e;
+            font-style: italic;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-summary {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 24px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+        }
+
+        .stat-label {
+            color: #9aa4bf;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: #c4e0ff;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.05);
+            margin: 16px 0;
+        }
+
+        .footer-meta {
+            padding: 1rem 1.5rem;
+            font-size: 0.7rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            color: #6c7a9e;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* telemetry / status row */
+        .system-status {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 28px;
+            padding: 0.8rem 1.5rem;
+            margin-top: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .latency-info i,
+        .frame-counter i {
+            margin-right: 6px;
+            opacity: 0.8;
+        }
+
+        button.reconnect-btn {
+            background: none;
+            border: 1px solid #2c3e66;
+            color: #bbd4ff;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button.reconnect-btn:hover {
+            background: #1e2a47;
+            border-color: #4f9eff;
+        }
+
+        /* responsive */
+        @media (max-width: 880px) {
+            .monitor-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            body {
+                padding: 1rem;
+            }
+
+            .title-section h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* loading shimmer effect */
+        .loading-placeholder {
+            background: linear-gradient(90deg, #1a1e2c 25%, #2a2f42 50%, #1a1e2c 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.8s infinite;
+            border-radius: 20px;
+            height: 360px;
+            width: 100%;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- header with professional branding -->
+        <div class="header">
+            <div class="title-section">
+                <h1>
+                    <i class="fas fa-robot"></i>
+                    TrashBot Vision
+                </h1>
+                <div class="subtitle">
+                    <i class="fas fa-microchip"></i> Real-time waste intelligence &nbsp;|&nbsp;
+                    <i class="fas fa-chart-line"></i> Edge AI Analytics
+                </div>
+            </div>
+            <div class="status-panel" id="connectionStatusPanel">
+                <span id="connectionText"><i class="fas fa-sync-alt fa-spin"></i> Connecting...</span>
+            </div>
+        </div>
+
+        <!-- main grid: feed + insights -->
+        <div class="monitor-grid">
+            <!-- left: video stream card -->
+            <div class="feed-card">
+                <div class="card-header">
+                    <div><i class="fas fa-video"></i> LIVE STREAM · TRASHBOT FEED</div>
+                    <div class="live-badge"><i class="fas fa-circle" style="font-size: 0.5rem;"></i> RECORDING</div>
+                </div>
+                <div class="image-container" id="imageContainer">
+                    <img id="live" alt="TrashBot camera feed"
+                        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23121728'/%3E%3Ctext x='50%25' y='50%25' font-size='20' fill='%238a9bc2' text-anchor='middle' dy='.3em'%3EAwaiting video stream...%3C/text%3E%3C/svg%3E">
+                </div>
+                <div class="footer-meta">
+                    <span><i class="far fa-clock"></i> Real-time inference</span>
+                    <span><i class="fas fa-shield-alt"></i> Encrypted stream</span>
+                </div>
+            </div>
+
+            <!-- right: detection panel with stats -->
+            <div class="insights-card">
+                <div class="detection-header">
+                    <h3><i class="fas fa-trash-alt"></i> Detected Objects</h3>
+                    <p style="font-size: 0.7rem; margin-top: 6px; color:#8892b0;">AI classification · waste categories
+                    </p>
+                </div>
+                <div class="detection-list-area">
+                    <div class="detection-badge-container" id="badgeContainer">
+                        <div class="empty-detection"><i class="fas fa-eye-slash"></i> No objects detected yet</div>
+                    </div>
+
+                    <div class="stats-summary">
+                        <div class="stat-item">
+                            <span class="stat-label"><i class="fas fa-cubes"></i> Total items (this session)</span>
+                            <span class="stat-value" id="totalCountStat">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label"><i class="fas fa-tag"></i> Last unique categories</span>
+                            <span class="stat-value" id="uniqueCatStat">—</span>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="stat-item">
+                            <span class="stat-label"><i class="fas fa-microchip"></i> Inference model</span>
+                            <span class="stat-value">YOLOv8 · TrashNet</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-meta" style="border-top: 1px solid rgba(255,255,255,0.03);">
+                    <span><i class="fas fa-chart-simple"></i> Real-time confidence > 65%</span>
+                    <span><i class="fas fa-database"></i> edge AI</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- system status row with latency & reconnection -->
+        <div class="system-status">
+            <div class="latency-info">
+                <i class="fas fa-waveform"></i> Signal: <span id="latencyStatus">awaiting frames</span>
+            </div>
+            <div class="frame-counter">
+                <i class="fas fa-exchange-alt"></i> Frames processed: <span id="frameCounter">0</span>
+            </div>
+            <div>
+                <button class="reconnect-btn" id="manualReconnectBtn"><i class="fas fa-plug"></i> Force
+                    reconnect</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================
+        // PROFESSIONAL DASHBOARD LOGIC
+        // ========================
+
+        // Configuration - same socket endpoint as original
+        const SOCKET_URL = "http://10.58.107.96:5000"; // replace with your server address if different
+        let socket = null;
+        let reconnectAttempts = 0;
+        let frameCount = 0;
+        let totalDetectionsSession = 0;
+        let lastDetectedArray = [];      // store last detections for stats
+        let uniqueCategoriesSet = new Set();
+
+        // DOM elements
+        const liveImg = document.getElementById("live");
+        const badgeContainer = document.getElementById("badgeContainer");
+        const totalCountSpan = document.getElementById("totalCountStat");
+        const uniqueCatSpan = document.getElementById("uniqueCatStat");
+        const frameCounterSpan = document.getElementById("frameCounter");
+        const latencyStatusSpan = document.getElementById("latencyStatus");
+        const connectionStatusSpan = document.getElementById("connectionText");
+        const connectionPanel = document.getElementById("connectionStatusPanel");
+
+        // helper: update detection UI (badges + stats)
+        function updateDetectionUI(detectedItems) {
+            // detectedItems is array of strings, e.g., ["plastic bottle", "can", "paper"]
+            if (!detectedItems || detectedItems.length === 0) {
+                // show empty state but don't reset total count
+                if (badgeContainer.innerHTML.indexOf("empty-detection") === -1) {
+                    badgeContainer.innerHTML = `<div class="empty-detection"><i class="fas fa-eye-slash"></i> No objects detected yet</div>`;
+                }
+                // keep last categories but stats not cleared
+                return;
+            }
+
+            // update unique categories set and total detections increment (each frame detection set counts as new event)
+            // Increment total items by number of unique items in this detection frame (professional counting: each detected object adds to total)
+            const newItemsCount = detectedItems.length;
+            totalDetectionsSession += newItemsCount;
+            totalCountSpan.innerText = totalDetectionsSession;
+
+            // track unique categories over the whole session
+            detectedItems.forEach(item => {
+                if (item && item.trim() !== "") {
+                    uniqueCategoriesSet.add(item.trim().toLowerCase());
+                }
+            });
+            const uniqueCount = uniqueCategoriesSet.size;
+            uniqueCatSpan.innerText = uniqueCount > 0 ? `${uniqueCount} type(s)` : "—";
+
+            // generate chips
+            const chipsHTML = detectedItems.map(item => {
+                let icon = "fa-recycle";
+                // intelligent icon mapping based on keyword
+                const lowerItem = item.toLowerCase();
+                if (lowerItem.includes("plastic")) icon = "fa-plastic";
+                else if (lowerItem.includes("bottle")) icon = "fa-wine-bottle";
+                else if (lowerItem.includes("can") || lowerItem.includes("aluminum")) icon = "fa-beer-can";
+                else if (lowerItem.includes("paper") || lowerItem.includes("cardboard")) icon = "fa-newspaper";
+                else if (lowerItem.includes("glass")) icon = "fa-wine-glass";
+                else if (lowerItem.includes("organic") || lowerItem.includes("food")) icon = "fa-apple-alt";
+                else icon = "fa-trash-can";
+
+                return `<div class="detection-chip"><i class="fas ${icon}"></i> ${escapeHtml(item)}</div>`;
+            }).join("");
+
+            badgeContainer.innerHTML = chipsHTML;
+            lastDetectedArray = [...detectedItems];
+        }
+
+        // simple XSS escape helper
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function (m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function (c) {
+                return c;
+            });
+        }
+
+        // update frame latency visual feedback
+        let lastTimestamp = 0;
+        function updateLatencyStatus() {
+            const now = Date.now();
+            if (lastTimestamp !== 0) {
+                const diff = now - lastTimestamp;
+                if (diff < 150) latencyStatusSpan.innerHTML = `<span style="color:#2dd4bf;"><i class="fas fa-bolt"></i> ${diff}ms (ultra-low)</span>`;
+                else if (diff < 350) latencyStatusSpan.innerHTML = `<span style="color:#facc15;"><i class="fas fa-tachometer-alt"></i> ${diff}ms</span>`;
+                else latencyStatusSpan.innerHTML = `<span style="color:#f97316;"><i class="fas fa-hourglass-half"></i> ${diff}ms</span>`;
+            } else {
+                latencyStatusSpan.innerHTML = `<i class="fas fa-charging-station"></i> streaming`;
+            }
+            lastTimestamp = now;
+        }
+
+        // update connection status indicator
+        function setConnectionStatus(isConnected, msg = null) {
+            if (isConnected) {
+                connectionStatusSpan.innerHTML = '<i class="fas fa-link"></i> CONNECTED · TrashBot Online';
+                connectionPanel.style.border = '1px solid rgba(16, 185, 129, 0.6)';
+                connectionPanel.style.background = 'rgba(16, 185, 129, 0.15)';
+            } else {
+                connectionStatusSpan.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${msg || 'DISCONNECTED'}`;
+                connectionPanel.style.border = '1px solid rgba(225, 29, 72, 0.5)';
+                connectionPanel.style.background = 'rgba(225, 29, 72, 0.1)';
+            }
+        }
+
+        // socket initialization with robust error handling
+        function initSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket.removeAllListeners();
+            }
+
+            socket = io(SOCKET_URL, {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 10,
+                reconnectionDelay: 1000,
+                timeout: 10000
+            });
+
+            socket.on("connect", () => {
+                console.log("[TrashBot] Socket connected to", SOCKET_URL);
+                setConnectionStatus(true);
+                reconnectAttempts = 0;
+                // optional: show connected badge effect
+                latencyStatusSpan.innerHTML = '<i class="fas fa-check-circle"></i> stream active';
+            });
+
+            socket.on("connect_error", (err) => {
+                console.error("[TrashBot] Connection error:", err.message);
+                setConnectionStatus(false, "connection error");
+                latencyStatusSpan.innerHTML = '<i class="fas fa-skull-crosswalk"></i> waiting for server';
+            });
+
+            socket.on("disconnect", (reason) => {
+                console.warn("[TrashBot] Disconnected:", reason);
+                setConnectionStatus(false, "reconnecting...");
+                latencyStatusSpan.innerHTML = '<i class="fas fa-pause-circle"></i> disconnected';
+            });
+
+            socket.on("update", (data) => {
+                // increment frame counter
+                frameCount++;
+                frameCounterSpan.innerText = frameCount;
+                updateLatencyStatus();
+
+                // handle image data
+                if (data && data.image) {
+                    liveImg.src = "data:image/jpeg;base64," + data.image;
+                    // remove placeholder loading style if needed
+                    if (liveImg.style.opacity !== "1") liveImg.style.opacity = "1";
+                }
+
+                // handle detection array
+                let detectedArray = [];
+                if (data.detected && Array.isArray(data.detected)) {
+                    detectedArray = data.detected.filter(d => d && d !== "");
+                } else if (data.detected && typeof data.detected === "string") {
+                    // fallback: if string is comma-separated
+                    detectedArray = data.detected.split(",").map(s => s.trim()).filter(s => s);
+                } else {
+                    detectedArray = [];
+                }
+
+                // Update UI with detection chips
+                if (detectedArray.length > 0) {
+                    updateDetectionUI(detectedArray);
+                } else {
+                    // keep previous but show empty detection only if also lastDetectedArray is empty to avoid flicker?
+                    if (lastDetectedArray.length === 0) {
+                        updateDetectionUI([]);
+                    } else if (detectedArray.length === 0 && lastDetectedArray.length > 0) {
+                        // transition to no objects: show empty state but keep total counter same
+                        badgeContainer.innerHTML = `<div class="empty-detection"><i class="fas fa-eye-slash"></i> No objects detected yet</div>`;
+                        lastDetectedArray = [];
+                    } else {
+                        updateDetectionUI([]);
+                    }
+                }
+
+                // advanced: if detected has items but we also want to keep total counts already handled in updateDetectionUI
+                // but we call updateDetectionUI only when non-empty, else we handle above
+                if (detectedArray.length > 0) {
+                    // already called updateDetectionUI inside condition
+                } else {
+                    // also reset lastDetectedArray 
+                    if (lastDetectedArray.length !== 0) lastDetectedArray = [];
+                }
+            });
+
+            socket.on("error", (err) => {
+                console.error("[TrashBot] Socket error:", err);
+            });
+
+            // optional: server may send custom heartbeat
+            socket.on("ping", () => {
+                // can be used for keep-alive metrics
+            });
+        }
+
+        // manual reconnect handler
+        function forceReconnect() {
+            setConnectionStatus(false, "reconnecting...");
+            latencyStatusSpan.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> handshake';
+            if (socket) socket.disconnect();
+            setTimeout(() => {
+                initSocket();
+            }, 200);
+        }
+
+        // additional elegant image fallback: if image fails to load, show overlay message
+        liveImg.onerror = function () {
+            this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 480'%3E%3Crect width='640' height='480' fill='%23121728'/%3E%3Ctext x='50%25' y='50%25' font-size='18' fill='%23ff8989' text-anchor='middle' dy='.3em'%3EStream error - reconnecting%3C/text%3E%3C/svg%3E";
+        };
+
+        // start socket connection
+        initSocket();
+
+        // add manual reconnect button event
+        const reconnectBtn = document.getElementById("manualReconnectBtn");
+        if (reconnectBtn) {
+            reconnectBtn.addEventListener("click", () => {
+                forceReconnect();
+            });
+        }
+
+        // periodic health check (optional but nice) : show last updated info
+        setInterval(() => {
+            if (socket && socket.connected) {
+                // emit heartbeat to check if needed but not mandatory
+                // just update visual connection badge if it ever gets out of sync
+                if (connectionStatusSpan.innerHTML.indexOf("CONNECTED") === -1) {
+                    setConnectionStatus(true);
+                }
+            } else if (socket && !socket.connected) {
+                setConnectionStatus(false, "offline");
+            }
+        }, 3000);
+
+        // Add welcome effect to make UI interactive
+        console.log("TrashBot Professional Dashboard | AI Waste Monitoring Ready");
+
+        // optional: show session start timestamp in console
+        const startTime = new Date().toLocaleTimeString();
+        console.log(`[Session] Dashboard initialized at ${startTime} — target server: ${SOCKET_URL}`);
+
+        // if after 10 seconds no frame received, show hint
+        let initialFrameTimeout = setTimeout(() => {
+            if (frameCount === 0) {
+                latencyStatusSpan.innerHTML = '<i class="fas fa-hourglass-start"></i> waiting for TrashBot stream...';
+            }
+        }, 8000);
+
+        // clear if any frame arrives
+        const originalUpdate = socket ? socket.on : null;
+        window.addEventListener('load', () => {
+            // slight UI polish
+            const observer = new MutationObserver(() => {
+                if (frameCount > 0 && initialFrameTimeout) {
+                    clearTimeout(initialFrameTimeout);
+                    observer.disconnect();
+                }
+            });
+            observer.observe(frameCounterSpan, { childList: true, subtree: true });
+        });
+
+        // expose for debugging (optional)
+        window.__trashbotDebug = { socket, forceReconnect, frameCount };
+    </script>
+</body>
+
+</html>
