@@ -1,0 +1,7 @@
+
+path: D:\Languages\trashbot_ai/dataset
+train: images/train
+val: images/train
+
+nc: 4
+names: ["bottle", "cup", "can", "other"]
